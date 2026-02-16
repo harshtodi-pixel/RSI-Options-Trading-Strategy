@@ -9,6 +9,7 @@ from datetime import datetime
 import pytz
 from typing import Dict
 import sys
+import os
 
 from rsi_options_strategy import RSIOptionsStrategy
 from dhan_datafeed import DhanDataFeed
@@ -337,9 +338,21 @@ def main():
     """
     Entry point for the trading bot
     """
+    # Load credentials from .env.local file
+    env_file = '.env.local'
+    if os.path.exists(env_file):
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    os.environ[key] = value
+    
     # Configuration
-    CLIENT_ID = "YOUR_DHAN_CLIENT_ID"
-    ACCESS_TOKEN = "YOUR_DHAN_ACCESS_TOKEN"
+    CLIENT_ID = os.getenv("CLIENT_ID")
+    ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
     
     # Telegram configuration
     ENABLE_TELEGRAM = True  # Set to False to disable

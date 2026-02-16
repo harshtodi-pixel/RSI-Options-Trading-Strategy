@@ -1,179 +1,105 @@
 """
-Configuration file for RSI Options Trading Strategy
-Modify these settings according to your requirements
+Configuration for RSI Options Trading Strategy
+
+Used by:
+  - backtest_engine.py (backtesting)
+  - trading_bot_runner.py (live trading)
 """
+
+import os
 
 # ============================================
 # DHAN API CREDENTIALS
 # ============================================
-# Get these from: https://dhan.co/api
-CLIENT_ID = "YOUR_CLIENT_ID_HERE"
-ACCESS_TOKEN = "YOUR_ACCESS_TOKEN_HERE"
+CLIENT_ID = os.getenv("CLIENT_ID")
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
 
 # ============================================
 # STRATEGY PARAMETERS
 # ============================================
 STRATEGY_CONFIG = {
-    # RSI calculation period
-    'rsi_length': 14,
-    
-    # Stop loss percentage (20 means 20% loss)
-    'stop_loss_pct': 20,
-    
-    # Target profit percentage (10 means 10% profit)
-    'target_pct': 10,
+    'rsi_length': 14,       # RSI period (calculated on option price)
+    'stop_loss_pct': 20,    # SL: exit if price rises 20% above avg entry
+    'target_pct': 10,       # TP: exit if price drops 10% below avg entry
 }
 
 
 # ============================================
-# INSTRUMENTS TO MONITOR
+# STAGGERED ENTRY LEVELS
 # ============================================
-# Select which instruments to trade
-# Available: NIFTY, SENSEX, BANKNIFTY, RELIANCE, HDFCBANK
-INSTRUMENTS = ['NIFTY', 'BANKNIFTY', 'RELIANCE', 'HDFCBANK', 'SENSEX']
+# After RSI crosses 70, sell in 3 parts as price rises:
+#   Part 1 (33.33%): base_price + 5%
+#   Part 2 (33.33%): base_price + 10%
+#   Part 3 (33.34%): base_price + 15%
+ENTRY_LEVEL_1_PCT = 5
+ENTRY_LEVEL_2_PCT = 10
+ENTRY_LEVEL_3_PCT = 15
+
+
+# ============================================
+# TRADING HOURS (IST)
+# ============================================
+TRADING_START_TIME = "09:30"   # Signal detection starts (9:30 to allow RSI warmup)
+TRADING_END_TIME = "14:30"     # Force exit all positions (2:30 PM)
 
 
 # ============================================
 # POSITION SIZING
 # ============================================
-# Capital allocation per position
-# Each position is divided into 3 parts: 33.33%, 33.33%, 33.34%
-CAPITAL_PER_POSITION = 100000  # Example: ₹1,00,000
+CAPITAL_PER_POSITION = 200000  # Rs 2,00,000 per lot
+
+# Lot sizes per instrument (number of units per lot)
+LOT_SIZE = {
+    'NIFTY': 75,
+    'BANKNIFTY': 30,
+    'SENSEX': 20,
+    'RELIANCE': 250,
+    'HDFCBANK': 550,
+}
 
 
 # ============================================
-# TRADING HOURS
+# INSTRUMENTS
 # ============================================
-# IST timezone
-TRADING_START_TIME = "09:18"  # HH:MM format
-TRADING_END_TIME = "15:15"    # HH:MM format
+INSTRUMENTS = ['NIFTY', 'BANKNIFTY', 'RELIANCE', 'HDFCBANK', 'SENSEX']
 
-
-# ============================================
-# ENTRY LEVELS
-# ============================================
-# Staggered entry at premium levels
-ENTRY_LEVEL_1_PCT = 5   # Entry 1 at +5% premium
-ENTRY_LEVEL_2_PCT = 10  # Entry 2 at +10% premium
-ENTRY_LEVEL_3_PCT = 15  # Entry 3 at +15% premium
-
-
-# ============================================
-# STRIKE SELECTION
-# ============================================
-# Strike rounding for each instrument
+# Strike rounding per instrument
 STRIKE_ROUNDING = {
     'NIFTY': 50,
     'BANKNIFTY': 100,
     'SENSEX': 100,
     'RELIANCE': 5,
-    'HDFCBANK': 10
+    'HDFCBANK': 10,
 }
-
-
-# ============================================
-# RISK MANAGEMENT
-# ============================================
-# Maximum concurrent positions (set to 1 for one at a time)
-MAX_CONCURRENT_POSITIONS = 1
-
-# Risk per trade as % of capital
-RISK_PER_TRADE_PCT = 2  # 2% of capital
-
-
-# ============================================
-# DATA REFRESH SETTINGS
-# ============================================
-# How often to check for new data (in seconds)
-DATA_REFRESH_INTERVAL = 1  # 1 second
-
-# How often to update ATM strikes (in seconds)
-ATM_UPDATE_INTERVAL = 300  # 5 minutes
-
-
-# ============================================
-# LOGGING SETTINGS
-# ============================================
-# Log file location
-LOG_FILE = "trading_bot.log"
-
-# Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_LEVEL = "INFO"
-
-
-# ============================================
-# NOTIFICATION SETTINGS (Optional)
-# ============================================
-# Telegram notifications
-# To set up:
-# 1. Open Telegram and search for @BotFather
-# 2. Send /newbot and follow instructions to create a bot
-# 3. Copy the bot token
-# 4. Start a chat with your bot and send any message
-# 5. Run: python telegram_notifier.py to get your chat ID
-# 6. Update the values below
-
-ENABLE_TELEGRAM_NOTIFICATIONS = True  # Set to True to enable
-TELEGRAM_BOT_TOKEN = "your_telegram_bot_token_here"  # From BotFather
-TELEGRAM_CHAT_ID = "your_telegram_chat_id_here"      # From telegram_notifier.py script
 
 
 # ============================================
 # BACKTEST SETTINGS
 # ============================================
-# For backtesting mode
-BACKTEST_START_DATE = "2024-01-01"
-BACKTEST_END_DATE = "2024-12-31"
-BACKTEST_INITIAL_CAPITAL = 1000000  # ₹10,00,000
+BACKTEST_START_DATE = "2025-01-01"
+BACKTEST_END_DATE = "2025-12-31"
+BACKTEST_INITIAL_CAPITAL = 200000  # Rs 2,00,000
+
+# Data paths (parquet files with 1-min options OHLC)
+BACKTEST_DATA_PATH = {
+    'NIFTY': 'data/options/nifty/NIFTY_OPTIONS_1m.parquet',
+    'SENSEX': 'data/options/sensex/SENSEX_OPTIONS_1m.parquet',
+}
 
 
 # ============================================
-# VALIDATION
+# LIVE TRADING SETTINGS
 # ============================================
-def validate_config():
-    """Validate configuration parameters"""
-    errors = []
-    
-    if CLIENT_ID == "YOUR_CLIENT_ID_HERE":
-        errors.append("CLIENT_ID not set")
-    
-    if ACCESS_TOKEN == "YOUR_ACCESS_TOKEN_HERE":
-        errors.append("ACCESS_TOKEN not set")
-    
-    if STRATEGY_CONFIG['rsi_length'] < 2:
-        errors.append("RSI length must be at least 2")
-    
-    if STRATEGY_CONFIG['stop_loss_pct'] <= 0:
-        errors.append("Stop loss must be positive")
-    
-    if STRATEGY_CONFIG['target_pct'] <= 0:
-        errors.append("Target must be positive")
-    
-    if not INSTRUMENTS:
-        errors.append("At least one instrument must be selected")
-    
-    return errors
+DATA_REFRESH_INTERVAL = 1    # seconds
+ATM_UPDATE_INTERVAL = 300    # seconds
+MAX_CONCURRENT_POSITIONS = 1
 
+# Logging
+LOG_FILE = "trading_bot.log"
+LOG_LEVEL = "INFO"
 
-if __name__ == "__main__":
-    # Validate configuration
-    errors = validate_config()
-    
-    if errors:
-        print("\n" + "="*60)
-        print("CONFIGURATION ERRORS:")
-        print("="*60)
-        for error in errors:
-            print(f"  ❌ {error}")
-        print("="*60 + "\n")
-    else:
-        print("\n" + "="*60)
-        print("CONFIGURATION VALID ✓")
-        print("="*60)
-        print(f"Instruments: {', '.join(INSTRUMENTS)}")
-        print(f"RSI Length: {STRATEGY_CONFIG['rsi_length']}")
-        print(f"Stop Loss: {STRATEGY_CONFIG['stop_loss_pct']}%")
-        print(f"Target: {STRATEGY_CONFIG['target_pct']}%")
-        print(f"Trading Hours: {TRADING_START_TIME} - {TRADING_END_TIME} IST")
-        print("="*60 + "\n")
+# Telegram (optional)
+ENABLE_TELEGRAM_NOTIFICATIONS = True
+TELEGRAM_BOT_TOKEN = "your_telegram_bot_token_here"
+TELEGRAM_CHAT_ID = "your_telegram_chat_id_here"
